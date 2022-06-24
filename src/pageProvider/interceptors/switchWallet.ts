@@ -5,6 +5,10 @@ import notice from "../notice";
 let instance: ReturnType<typeof notice> | null;
 
 export const switchWalletNotice = (type: "rabby" | "metamask") => {
+  const titles = {
+    rabby: "Rabby",
+    metamask: "MetaMask",
+  };
   if (instance) {
     instance.hide();
     instance = null;
@@ -18,7 +22,9 @@ export const switchWalletNotice = (type: "rabby" | "metamask") => {
         type === "rabby" ? IconRabby : IconMetamask
       }"/>
       <div>
-        <div><span style="font-weight: bold; text-transform: capitalize;">${type}</span> is your default wallet now. </div>
+        <div><span style="font-weight: bold;">${
+          titles[type]
+        }</span> is your default wallet now. </div>
         <div>
         Please <a
           href="javascript:window.location.reload();"
