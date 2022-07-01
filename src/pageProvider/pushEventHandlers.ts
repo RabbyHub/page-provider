@@ -9,7 +9,7 @@ class PushEventHandlers {
   }
 
   _emit(event, data) {
-    if (this.provider._initialized) {
+    if (this.provider._initialized && this.provider._isReady) {
       this.provider.emit(event, data);
     }
   }

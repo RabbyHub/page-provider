@@ -301,7 +301,10 @@ declare global {
 const provider = new EthereumProvider();
 let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
-  deleteProperty: () => true,
+  deleteProperty: (target, prop) => {
+    delete target[prop];
+    return true;
+  },
 });
 
 provider
@@ -351,6 +354,8 @@ provider
       });
     } else {
       finalProvider = cacheOtherProvider;
+      // @ts-ignore
+      delete rabbyProvider.on;
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
       });
