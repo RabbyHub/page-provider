@@ -302,7 +302,10 @@ const provider = new EthereumProvider();
 let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
-    delete target[prop];
+    if (prop === "on") {
+      // @ts-ignore
+      delete target[prop];
+    }
     return true;
   },
 });
