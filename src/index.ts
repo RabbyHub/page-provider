@@ -72,15 +72,7 @@ export class EthereumProvider extends EventEmitter {
 
   private _pushEventHandlers: PushEventHandlers;
   private _requestPromise = new ReadyPromise(2);
-  private _dedupePromise = new DedupePromise([
-    "personal_sign",
-    "wallet_addEthereumChain",
-    "eth_sendTransaction",
-    "eth_signTypedData",
-    "eth_signTypedData_v1",
-    "eth_signTypedData_v3",
-    "eth_signTypedData_v4",
-  ]);
+  private _dedupePromise = new DedupePromise([]);
   private _bcm = new BroadcastChannelMessage(channelName);
 
   constructor({ maxListeners = 100 } = {}) {
