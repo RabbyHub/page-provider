@@ -294,7 +294,7 @@ const provider = new EthereumProvider();
 let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
-    if (prop === "on") {
+    if (prop === "on" || prop === "isRabby") {
       // @ts-ignore
       delete target[prop];
     }
@@ -351,8 +351,21 @@ provider
       finalProvider = cacheOtherProvider;
       // @ts-ignore
       delete rabbyProvider.on;
+      // @ts-ignore
+      delete rabbyProvider.isRabby;
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
+      });
+      const keys = ["selectedAddress", "chainId", 'networkVersion'];
+      keys.forEach((key) => {
+        Object.defineProperty(cacheOtherProvider, key, {
+          get() {
+            return window.ethereum[key];
+          },
+          set(val) {
+            window.ethereum[key] = val;
+          },
+        });
       });
     }
     provider._cacheEventListenersBeforeReady.forEach(([event, handler]) => {
