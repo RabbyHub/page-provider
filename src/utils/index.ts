@@ -1,4 +1,3 @@
-import { CHAINS } from "@debank/common";
 import { keyBy } from "lodash";
 import { browser } from "webextension-polyfill-ts";
 import { ledgerUSBVendorId } from "@ledgerhq/devices";
@@ -22,14 +21,6 @@ const format = (str, ...args) => {
 };
 
 export { Message, t, format };
-
-const chainsDict = keyBy(CHAINS, "serverId");
-export const getChain = (chainId?: string) => {
-  if (!chainId) {
-    return null;
-  }
-  return chainsDict[chainId];
-};
 
 export const hasConnectedLedgerDevice = async () => {
   // const devices = await navigator.hid.getDevices();
