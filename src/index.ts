@@ -330,7 +330,7 @@ provider
         };
       }
       finalProvider._isReady = true;
-      finalProvider.on("chainChanged", switchChainNotice);
+      finalProvider.on("rabby:chainChanged", switchChainNotice);
       const widgets = [DEXPriceComparison];
       widgets.forEach((Widget) => {
         provider
