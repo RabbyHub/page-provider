@@ -66,6 +66,12 @@ class PushEventHandlers {
       this._emit("networkChanged", networkVersion);
     }
   };
+
+  "rabby:chainChanged" = (chain) => {
+    if (chain && chain.id !== this.provider.chainId) {
+      this._emit("rabby:chainChanged", chain);
+    }
+  };
 }
 
 export default PushEventHandlers;
