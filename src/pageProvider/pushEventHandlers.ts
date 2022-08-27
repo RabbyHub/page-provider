@@ -68,7 +68,10 @@ class PushEventHandlers {
   };
 
   "rabby:chainChanged" = (chain) => {
-    if (chain && chain.id !== this.provider.chainId) {
+    if (
+      chain &&
+      chain.hex?.toLowerCase() !== this.provider.chainId?.toLowerCase()
+    ) {
       this._emit("rabby:chainChanged", chain);
     }
   };
