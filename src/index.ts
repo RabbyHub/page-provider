@@ -6,7 +6,6 @@ import PushEventHandlers from "./pageProvider/pushEventHandlers";
 import { domReadyCall, $ } from "./pageProvider/utils";
 import ReadyPromise from "./pageProvider/readyPromise";
 import DedupePromise from "./pageProvider/dedupePromise";
-import { DEXPriceComparison, isUrlMatched } from "@rabby-wallet/widgets";
 import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
 
@@ -287,6 +286,7 @@ export class EthereumProvider extends EventEmitter {
 declare global {
   interface Window {
     ethereum: EthereumProvider;
+    web3: any;
   }
 }
 
@@ -331,22 +331,6 @@ provider
       }
       finalProvider._isReady = true;
       finalProvider.on("rabby:chainChanged", switchChainNotice);
-      const widgets = [DEXPriceComparison];
-      widgets.forEach((Widget) => {
-        provider
-          .request({
-            method: "isWidgetDisabled",
-            params: [Widget.widgetName],
-          })
-          .then((isDisabled) => {
-            if (!isDisabled) {
-              const rule = isUrlMatched(location.href, Widget.include);
-              if (rule) {
-                new Widget(rule);
-              }
-            }
-          });
-      });
     } else {
       finalProvider = cacheOtherProvider;
       // @ts-ignore
