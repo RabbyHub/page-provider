@@ -45,6 +45,7 @@ const style = `
   line-height: 23px;
   color: #EC5151;
   margin: 0 0 0 12px;
+  font-family: inherit;
 }
 
 .${STYLE_PREFIX}-headline {
@@ -58,6 +59,7 @@ const style = `
   line-height: 22px;
   margin: 0 0 15px 0;
   font-weight: 400;
+  font-family: inherit;
 }
 
 .${STYLE_PREFIX}-body {
@@ -82,10 +84,12 @@ const style = `
   color: #fff;
   font-size: 15px;
   margin-bottom: 20px;
+  font-family: inherit;
 }
 
 .${STYLE_PREFIX}-close:hover {
   opacity: 0.8;
+  color: inherit;
 }
 
 .${STYLE_PREFIX}-continue {
@@ -93,10 +97,12 @@ const style = `
   color: #707280;
   text-decoration: underline;
   line-height: 14px;
+  font-family: inherit;
 }
 
 .${STYLE_PREFIX}-continue:hover {
   opacity: 0.8;
+  color: inherit;
 }
 `;
 
