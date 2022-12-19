@@ -8,6 +8,7 @@ import ReadyPromise from "./pageProvider/readyPromise";
 import DedupePromise from "./pageProvider/dedupePromise";
 import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
+import { WarningModal } from "./pageProvider/warningModal";
 
 declare const channelName;
 
@@ -104,6 +105,33 @@ export class EthereumProvider extends EventEmitter {
         method: "tabCheckin",
         params: { icon, name, origin },
       });
+
+      this._bcm
+        .request({
+          method: 'detectPhishSite',
+          params: { origin }
+        })
+        .then((isPhishing) => {
+          if (isPhishing) {
+            const warningModal = new WarningModal({
+              origin,
+              onClose: () => {
+                this._bcm.request({
+                  method: 'closePhishSite',
+                  params: { origin }
+                });
+              },
+              onContinue: () => {
+                this._bcm.request({
+                  method: 'continuePhishSite',
+                  params: { origin }
+                });
+              }
+            });
+
+            warningModal.show();
+          }
+        });
 
       this._requestPromise.check(2);
     });
