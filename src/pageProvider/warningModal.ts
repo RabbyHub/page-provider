@@ -56,17 +56,17 @@ const style = `
   font-size: 15px;
   color: #13141A;
   line-height: 22px;
-  margin: 0 0 22px 0;
+  margin: 0 0 15px 0;
   font-weight: 400;
 }
 
 .${STYLE_PREFIX}-body {
-  margin-bottom: 28px;
+  margin-bottom: 35px;
 }
 
 .${STYLE_PREFIX}-footer {
   display: flex;
-  margin: auto;
+  margin: 0 auto 30px;
   flex-direction: column;
   align-items: center;
 }
@@ -92,6 +92,7 @@ const style = `
   font-size: 12px;
   color: #707280;
   text-decoration: underline;
+  line-height: 14px;
 }
 
 .${STYLE_PREFIX}-continue:hover {
