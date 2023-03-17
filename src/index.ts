@@ -312,18 +312,23 @@ provider
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
       });
-      Object.defineProperty(window, "ethereum", {
-        set() {
-          provider.requestInternalMethods({
-            method: "hasOtherProvider",
-            params: [],
-          });
-          return finalProvider;
-        },
-        get() {
-          return finalProvider;
-        },
-      });
+      try {
+        Object.defineProperty(window, "ethereum", {
+          set() {
+            provider.requestInternalMethods({
+              method: "hasOtherProvider",
+              params: [],
+            });
+            return finalProvider;
+          },
+          get() {
+            return finalProvider;
+          },
+        });
+      } catch (e) {
+        console.error(e);
+        window.ethereum = finalProvider;
+      }
       if (!window.web3) {
         window.web3 = {
           currentProvider: rabbyProvider,
@@ -372,22 +377,27 @@ if (window.ethereum) {
 }
 
 window.ethereum = rabbyProvider;
-
-Object.defineProperty(window, "ethereum", {
-  set(val) {
-    if (val?.isRabby) {
-      return;
-    }
-    provider.requestInternalMethods({
-      method: "hasOtherProvider",
-      params: [],
-    });
-    cacheOtherProvider = val;
-  },
-  get() {
-    return rabbyProvider;
-  },
-});
+try {
+  Object.defineProperty(window, "ethereum", {
+    set(val) {
+      if (val?.isRabby) {
+        return;
+      }
+      provider.requestInternalMethods({
+        method: "hasOtherProvider",
+        params: [],
+      });
+      cacheOtherProvider = val;
+    },
+    get() {
+      return rabbyProvider;
+    },
+  });
+} catch (e) {
+  console.error(e);
+  // To prevent Object.defineProperty from other wallet, inject ethereum provider directly
+  window.ethereum = rabbyProvider;
+}
 
 if (!window.web3) {
   window.web3 = {
