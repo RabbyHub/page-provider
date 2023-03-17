@@ -345,7 +345,7 @@ provider
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
       });
-      const keys = ["selectedAddress", "chainId", 'networkVersion'];
+      const keys = ["selectedAddress", "chainId", "networkVersion"];
       keys.forEach((key) => {
         Object.defineProperty(cacheOtherProvider, key, {
           get() {
@@ -380,6 +380,9 @@ window.ethereum = rabbyProvider;
 try {
   Object.defineProperty(window, "ethereum", {
     set(val) {
+      if (val?.isRabby) {
+        return;
+      }
       provider.requestInternalMethods({
         method: "hasOtherProvider",
         params: [],
