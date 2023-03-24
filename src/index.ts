@@ -309,10 +309,10 @@ provider
     let finalProvider: EthereumProvider | null = null;
     if (isDefaultWallet || !cacheOtherProvider) {
       finalProvider = rabbyProvider;
-      Object.keys(finalProvider).forEach((key) => {
-        window.ethereum[key] = (finalProvider as EthereumProvider)[key];
-      });
       try {
+        Object.keys(finalProvider).forEach((key) => {
+          window.ethereum[key] = (finalProvider as EthereumProvider)[key];
+        });
         Object.defineProperty(window, "ethereum", {
           set() {
             provider.requestInternalMethods({
