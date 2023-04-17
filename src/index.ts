@@ -326,6 +326,11 @@ provider
           },
         });
       } catch (e) {
+        // think that defineProperty failed means there is any other wallet
+        provider.requestInternalMethods({
+          method: "hasOtherProvider",
+          params: [],
+        });
         console.error(e);
         window.ethereum = finalProvider;
       }
