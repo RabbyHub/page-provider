@@ -307,6 +307,14 @@ provider
   .then((isDefaultWallet) => {
     rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
     let finalProvider: EthereumProvider | null = null;
+
+    if (window.ethereum && !window.ethereum.isRabby) {
+      provider.requestInternalMethods({
+        method: "hasOtherProvider",
+        params: [],
+      });
+    }
+
     if (isDefaultWallet || !cacheOtherProvider) {
       finalProvider = rabbyProvider;
       try {
