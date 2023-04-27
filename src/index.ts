@@ -313,6 +313,7 @@ provider
         method: "hasOtherProvider",
         params: [],
       });
+      cacheOtherProvider = window.ethereum;
     }
 
     if (isDefaultWallet || !cacheOtherProvider) {
@@ -357,17 +358,6 @@ provider
       delete rabbyProvider.isRabby;
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
-      });
-      const keys = ["selectedAddress", "chainId", "networkVersion"];
-      keys.forEach((key) => {
-        Object.defineProperty(cacheOtherProvider, key, {
-          get() {
-            return window.ethereum[key];
-          },
-          set(val) {
-            window.ethereum[key] = val;
-          },
-        });
       });
     }
     provider._cacheEventListenersBeforeReady.forEach(([event, handler]) => {
