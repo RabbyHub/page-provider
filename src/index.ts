@@ -8,6 +8,7 @@ import ReadyPromise from "./pageProvider/readyPromise";
 import DedupePromise from "./pageProvider/dedupePromise";
 import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
+import { getProviderMode, patchProvider } from "./utils/metamask";
 
 declare const channelName;
 
@@ -44,6 +45,7 @@ export class EthereumProvider extends EventEmitter {
   networkVersion: string | null = null;
   isRabby = true;
   isMetaMask = true;
+  _isRabby = true;
 
   _isReady = false;
   _isConnected = false;
@@ -291,10 +293,14 @@ declare global {
 }
 
 const provider = new EthereumProvider();
+patchProvider(provider);
 let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
-    if (prop === "on" || prop === "isRabby") {
+    if (
+      typeof prop === "string" &&
+      ["on", "isRabby", "isMetaMask", "_isRabby"].includes(prop)
+    ) {
       // @ts-ignore
       delete target[prop];
     }
@@ -308,7 +314,7 @@ provider
     rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
     let finalProvider: EthereumProvider | null = null;
 
-    if (window.ethereum && !window.ethereum.isRabby) {
+    if (window.ethereum && !window.ethereum._isRabby) {
       provider.requestInternalMethods({
         method: "hasOtherProvider",
         params: [],
@@ -322,6 +328,7 @@ provider
         Object.keys(finalProvider).forEach((key) => {
           window.ethereum[key] = (finalProvider as EthereumProvider)[key];
         });
+        patchProvider(window.ethereum);
         Object.defineProperty(window, "ethereum", {
           set() {
             provider.requestInternalMethods({
@@ -356,6 +363,8 @@ provider
       delete rabbyProvider.on;
       // @ts-ignore
       delete rabbyProvider.isRabby;
+      // @ts-ignore
+      delete rabbyProvider._isRabby;
       Object.keys(finalProvider).forEach((key) => {
         window.ethereum[key] = (finalProvider as EthereumProvider)[key];
       });
@@ -383,7 +392,7 @@ window.ethereum = rabbyProvider;
 try {
   Object.defineProperty(window, "ethereum", {
     set(val) {
-      if (val?.isRabby) {
+      if (val?._isRabby) {
         return;
       }
       provider.requestInternalMethods({
