@@ -40,10 +40,21 @@ const impersonateMetamaskWhitelist = [
   "tally.xyz",
   "kyberswap.com",
   "space.id",
+
+  "bitcoinbridge.network",
+  "bridge.liquidswap.com",
+  "theaptosbridge.com",
+  "app.actafi.org",
+  "goal3.xyz",
 ];
 
 // keep isRabby and remove isMetaMask
-const rabbyHostList = ["telx.network"];
+const rabbyHostList = [
+  "enso.finance",
+  "telx.network",
+  "link3.to",
+  "hypercerts.org",
+];
 
 /**
  * Detect current host is includes target host
@@ -69,9 +80,27 @@ const djb2 = (str: string) => {
   return hash >>> 0;
 };
 
-// todo use secondary domain to calc gray
+const rootDomainList = [
+  "eth.limo",
+  "eth.link",
+  "github.com",
+  "github.io",
+  "ipfs.io",
+  "linktr.ee",
+  "surge.sh",
+  "vercel.com",
+];
+
+const getRootDomain = (host: string) => {
+  return host.split(".").slice(-2).join(".");
+};
+
 const calcIsGray = (host: string, ratio: number) => {
-  return (djb2(host) % 100) / 100 <= ratio;
+  let domain = getRootDomain(host);
+  if (isInHostList(rootDomainList, host)) {
+    domain = host;
+  }
+  return (djb2(domain) % 100) / 100 <= ratio;
 };
 
 type Mode = "metamask" | "rabby" | "default";
