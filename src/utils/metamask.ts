@@ -1,24 +1,24 @@
 // https://github.com/tahowallet/extension/blob/main/window-provider/index.ts
 // keep isMetaMask and remove isRabby
 const impersonateMetamaskWhitelist = [
-  // "traderjoexyz.com",
-  // "transferto.xyz",
+  "traderjoexyz.com",
+  "transferto.xyz",
   "opensea.io",
   "polygon.technology",
   // "gmx.io",
   "app.lyra.finance",
-  // "matcha.xyz",
+  "matcha.xyz",
   "bridge.umbria.network",
   // "galaxy.eco",
   // "galxe.com",
   "dydx.exchange",
-  // "app.euler.finance",
-  // "kwenta.io",
+  "app.euler.finance",
+  "kwenta.io",
   "stargate.finance",
   // "etherscan.io",
   "swapr.eth.link",
   "apex.exchange",
-  // "app.yieldprotocol.com",
+  "app.yieldprotocol.com",
   // "tofunft.com",
   // "aboard.exchange",
   "portal.zksync.io",
@@ -30,13 +30,13 @@ const impersonateMetamaskWhitelist = [
   "app.multchain.cn",
   // "app.venus.io",
   // "app.alpacafinance.org",
-  // "pancakeswap.finance",
+  "pancakeswap.finance",
   "liquidifty.io",
   "ankr.com",
-  // "mint.xencrypto.io",
+  "mint.xencrypto.io",
   // "bscscan.com",
   "alchemy.com",
-  // "cow.fi",
+  "cow.fi",
   "tally.xyz",
   "kyberswap.com",
   "space.id",
@@ -112,7 +112,7 @@ export const getProviderMode = (host: string): Mode => {
   if (isInHostList(rabbyHostList, host)) {
     return "rabby";
   }
-  return calcIsGray(host, 0.1) ? "rabby" : "default";
+  return calcIsGray(host, 0.05) ? "rabby" : "default";
 };
 
 export const patchProvider = (provider: any) => {
