@@ -1,46 +1,21 @@
-// https://github.com/tahowallet/extension/blob/main/window-provider/index.ts
 // keep isMetaMask and remove isRabby
 const impersonateMetamaskWhitelist = [
-  "traderjoexyz.com",
-  "transferto.xyz",
-  "opensea.io",
-  "polygon.technology",
-  "app.lyra.finance",
-  "matcha.xyz",
-  "bridge.umbria.network",
-  "dydx.exchange",
-  "app.euler.finance",
-  "kwenta.io",
-  "stargate.finance",
-  "swapr.eth.link",
-  "apex.exchange",
-  "app.yieldprotocol.com",
-  "portal.zksync.io",
-  "app.multchain.cn",
-  "pancakeswap.finance",
-  "liquidifty.io",
-  "ankr.com",
-  "mint.xencrypto.io",
-  "alchemy.com",
-  "cow.fi",
-  "tally.xyz",
-  "kyberswap.com",
-  "space.id",
-
+  // layerzero
   "bitcoinbridge.network",
   "bridge.liquidswap.com",
   "theaptosbridge.com",
   "app.actafi.org",
-  "goal3.xyz",
-];
 
-// keep isRabby and remove isMetaMask
-const rabbyHostList = [
+  // rainbow
+  "goal3.xyz",
   "enso.finance",
   "telx.network",
   "link3.to",
   "hypercerts.org",
 ];
+
+// keep isRabby and remove isMetaMask
+const rabbyHostList: string[] = [];
 
 /**
  * Detect current host is includes target host
@@ -81,7 +56,7 @@ const getRootDomain = (host: string) => {
   return host.split(".").slice(-2).join(".");
 };
 
-const calcIsGray = (host: string, ratio: number) => {
+export const calcIsGray = (host: string, ratio: number) => {
   let domain = getRootDomain(host);
   if (isInHostList(rootDomainList, host)) {
     domain = host;
@@ -98,7 +73,7 @@ export const getProviderMode = (host: string): Mode => {
   if (isInHostList(rabbyHostList, host)) {
     return "rabby";
   }
-  return calcIsGray(host, 0.05) ? "rabby" : "default";
+  return "default";
 };
 
 export const patchProvider = (provider: any) => {
