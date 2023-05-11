@@ -308,13 +308,38 @@ const rabbyProvider = new Proxy(provider, {
   },
 });
 
+const rabbyDefinePropertyDescriptor = {
+  set(val) {
+    if (val?._isRabby) {
+      return;
+    }
+    provider.requestInternalMethods({
+      method: "hasOtherProvider",
+      params: [],
+    });
+    cacheOtherProvider = val;
+  },
+  get() {
+    return rabbyProvider;
+  },
+};
+
+const isEthereumRedefined = () => {
+  const current = Object.getOwnPropertyDescriptor(window, "ethereum");
+  return current && current.set !== rabbyDefinePropertyDescriptor.set;
+};
+
 provider
   .requestInternalMethods({ method: "isDefaultWallet" })
   .then((isDefaultWallet) => {
     rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
     let finalProvider: EthereumProvider | null = null;
 
-    if (window.ethereum && !window.ethereum._isRabby) {
+    console.log("isRedefined", isEthereumRedefined());
+    if (
+      (window.ethereum && !window.ethereum._isRabby) ||
+      isEthereumRedefined()
+    ) {
       provider.requestInternalMethods({
         method: "hasOtherProvider",
         params: [],
@@ -390,21 +415,7 @@ if (window.ethereum) {
 
 window.ethereum = rabbyProvider;
 try {
-  Object.defineProperty(window, "ethereum", {
-    set(val) {
-      if (val?._isRabby) {
-        return;
-      }
-      provider.requestInternalMethods({
-        method: "hasOtherProvider",
-        params: [],
-      });
-      cacheOtherProvider = val;
-    },
-    get() {
-      return rabbyProvider;
-    },
-  });
+  Object.defineProperty(window, "ethereum", rabbyDefinePropertyDescriptor);
 } catch (e) {
   console.error(e);
   // To prevent Object.defineProperty from other wallet, inject ethereum provider directly
