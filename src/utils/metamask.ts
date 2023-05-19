@@ -12,6 +12,8 @@ const impersonateMetamaskWhitelist = [
   "telx.network",
   "link3.to",
   "hypercerts.org",
+
+  "quickswap.exchange",
 ];
 
 // keep isRabby and remove isMetaMask
