@@ -12,6 +12,7 @@ const impersonateMetamaskWhitelist = [
   "telx.network",
   "link3.to",
   "hypercerts.org",
+  "matcha.xyz",
 
   "quickswap.exchange",
 ];
