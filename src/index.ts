@@ -330,7 +330,6 @@ const rabbyProvider = new Proxy(provider, {
 provider
   .requestInternalMethods({ method: "isDefaultWallet" })
   .then((isDefaultWallet) => {
-    rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
     let finalProvider: EthereumProvider | null = null;
 
     if (window.ethereum && !window.ethereum._isRabby) {
@@ -344,9 +343,6 @@ provider
     if (isDefaultWallet || !cacheOtherProvider) {
       finalProvider = rabbyProvider;
       try {
-        Object.keys(finalProvider).forEach((key) => {
-          window.ethereum[key] = (finalProvider as EthereumProvider)[key];
-        });
         patchProvider(window.ethereum);
         Object.defineProperty(window, "ethereum", {
           set() {
@@ -378,14 +374,14 @@ provider
       finalProvider.on("rabby:chainChanged", switchChainNotice);
     } else {
       finalProvider = cacheOtherProvider;
-      // @ts-ignore
-      delete rabbyProvider.on;
-      // @ts-ignore
-      delete rabbyProvider.isRabby;
-      // @ts-ignore
-      delete rabbyProvider._isRabby;
-      Object.keys(finalProvider).forEach((key) => {
-        window.ethereum[key] = (finalProvider as EthereumProvider)[key];
+      rabbyProvider._isReady = true;
+      Object.defineProperty(window, "ethereum", {
+        set() {
+          return finalProvider;
+        },
+        get() {
+          return finalProvider;
+        },
       });
     }
     provider._cacheEventListenersBeforeReady.forEach(([event, handler]) => {
@@ -397,6 +393,7 @@ provider
         .then(resolve)
         .catch(reject);
     });
+    rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
   });
 
 if (window.ethereum) {
