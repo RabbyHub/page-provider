@@ -7,13 +7,7 @@ const impersonateMetamaskWhitelist = [
   "app.actafi.org",
 
   // rainbow
-  "goal3.xyz",
-  "enso.finance",
   "telx.network",
-  "link3.to",
-  "hypercerts.org",
-
-  "quickswap.exchange",
 ];
 
 // keep isRabby and remove isMetaMask
