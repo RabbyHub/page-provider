@@ -6,6 +6,9 @@ const impersonateMetamaskWhitelist = [
   "theaptosbridge.com",
   "app.actafi.org",
 
+  "bridge.linea.build",
+  "bridge.coredao.org",
+
   // rainbow
   "telx.network",
 ];
