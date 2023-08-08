@@ -10,7 +10,7 @@ import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
 import { getProviderMode, patchProvider } from "./utils/metamask";
 
-declare const channelName;
+declare const __rabby__channelName;
 declare const __rabby__isDefaultWallet;
 
 const log = (event, ...args) => {
@@ -75,7 +75,7 @@ export class EthereumProvider extends EventEmitter {
   private _pushEventHandlers: PushEventHandlers;
   private _requestPromise = new ReadyPromise(2);
   private _dedupePromise = new DedupePromise([]);
-  private _bcm = new BroadcastChannelMessage(channelName);
+  private _bcm = new BroadcastChannelMessage(__rabby__channelName);
 
   constructor({ maxListeners = 100 } = {}) {
     super();
