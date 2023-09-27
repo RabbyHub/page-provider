@@ -1,5 +1,5 @@
 import { keyBy } from "lodash";
-import { browser } from "webextension-polyfill-ts";
+import browser from "webextension-polyfill";
 import { ledgerUSBVendorId } from "@ledgerhq/devices";
 
 import BroadcastChannelMessage from "./message/broadcastChannelMessage";
