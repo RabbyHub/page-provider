@@ -1,12 +1,12 @@
 const domReadyCall = (callback) => {
-  if (document.readyState === "loading") {
+  if (document.readyState === 'complete') {
+    callback();
+  } else {
     const domContentLoadedHandler = () => {
       callback();
-      document.removeEventListener("DOMContentLoaded", domContentLoadedHandler);
+      document.removeEventListener('DOMContentLoaded', domContentLoadedHandler);
     };
-    document.addEventListener("DOMContentLoaded", domContentLoadedHandler);
-  } else {
-    callback();
+    document.addEventListener('DOMContentLoaded', domContentLoadedHandler);
   }
 };
 

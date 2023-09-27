@@ -10,8 +10,7 @@ import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
 import { getProviderMode, patchProvider } from "./utils/metamask";
 
-declare const __rabby__channelName;
-declare const __rabby__isDefaultWallet;
+declare const channelName;
 
 const log = (event, ...args) => {
   if (process.env.NODE_ENV !== "production") {
@@ -75,7 +74,7 @@ export class EthereumProvider extends EventEmitter {
   private _pushEventHandlers: PushEventHandlers;
   private _requestPromise = new ReadyPromise(2);
   private _dedupePromise = new DedupePromise([]);
-  private _bcm = new BroadcastChannelMessage(__rabby__channelName);
+  private _bcm = new BroadcastChannelMessage(channelName);
 
   constructor({ maxListeners = 100 } = {}) {
     super();
@@ -309,6 +308,78 @@ const rabbyProvider = new Proxy(provider, {
   },
 });
 
+provider
+  .requestInternalMethods({ method: "isDefaultWallet" })
+  .then((isDefaultWallet) => {
+    rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
+    let finalProvider: EthereumProvider | null = null;
+
+    if (window.ethereum && !window.ethereum._isRabby) {
+      provider.requestInternalMethods({
+        method: "hasOtherProvider",
+        params: [],
+      });
+      cacheOtherProvider = window.ethereum;
+    }
+
+    if (isDefaultWallet || !cacheOtherProvider) {
+      finalProvider = rabbyProvider;
+      try {
+        Object.keys(finalProvider).forEach((key) => {
+          window.ethereum[key] = (finalProvider as EthereumProvider)[key];
+        });
+        patchProvider(window.ethereum);
+        Object.defineProperty(window, "ethereum", {
+          set() {
+            provider.requestInternalMethods({
+              method: "hasOtherProvider",
+              params: [],
+            });
+            return finalProvider;
+          },
+          get() {
+            return finalProvider;
+          },
+        });
+      } catch (e) {
+        // think that defineProperty failed means there is any other wallet
+        provider.requestInternalMethods({
+          method: "hasOtherProvider",
+          params: [],
+        });
+        console.error(e);
+        window.ethereum = finalProvider;
+      }
+      if (!window.web3) {
+        window.web3 = {
+          currentProvider: rabbyProvider,
+        };
+      }
+      finalProvider._isReady = true;
+      finalProvider.on("rabby:chainChanged", switchChainNotice);
+    } else {
+      finalProvider = cacheOtherProvider;
+      // @ts-ignore
+      delete rabbyProvider.on;
+      // @ts-ignore
+      delete rabbyProvider.isRabby;
+      // @ts-ignore
+      delete rabbyProvider._isRabby;
+      Object.keys(finalProvider).forEach((key) => {
+        window.ethereum[key] = (finalProvider as EthereumProvider)[key];
+      });
+    }
+    provider._cacheEventListenersBeforeReady.forEach(([event, handler]) => {
+      (finalProvider as EthereumProvider).on(event, handler);
+    });
+    provider._cacheRequestsBeforeReady.forEach(({ resolve, reject, data }) => {
+      (finalProvider as EthereumProvider)
+        .request(data)
+        .then(resolve)
+        .catch(reject);
+    });
+  });
+
 if (window.ethereum) {
   cacheOtherProvider = window.ethereum;
   provider.requestInternalMethods({
@@ -345,80 +416,5 @@ if (!window.web3) {
     currentProvider: window.ethereum,
   };
 }
-
-const initProvider = (isDefaultWallet: boolean) => {
-  rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
-  let finalProvider: EthereumProvider | null = null;
-
-  if (window.ethereum && !window.ethereum._isRabby) {
-    provider.requestInternalMethods({
-      method: "hasOtherProvider",
-      params: [],
-    });
-    cacheOtherProvider = window.ethereum;
-  }
-
-  if (isDefaultWallet || !cacheOtherProvider) {
-    finalProvider = rabbyProvider;
-    try {
-      // Object.keys(finalProvider).forEach((key) => {
-      //   window.ethereum[key] = (finalProvider as EthereumProvider)[key];
-      // });
-      patchProvider(window.ethereum);
-      Object.defineProperty(window, "ethereum", {
-        set() {
-          provider.requestInternalMethods({
-            method: "hasOtherProvider",
-            params: [],
-          });
-          return finalProvider;
-        },
-        get() {
-          return finalProvider;
-        },
-      });
-    } catch (e) {
-      // think that defineProperty failed means there is any other wallet
-      provider.requestInternalMethods({
-        method: "hasOtherProvider",
-        params: [],
-      });
-      console.error(e);
-      window.ethereum = finalProvider;
-    }
-    if (!window.web3) {
-      window.web3 = {
-        currentProvider: rabbyProvider,
-      };
-    }
-    finalProvider.on("rabby:chainChanged", switchChainNotice);
-  } else {
-    finalProvider = cacheOtherProvider;
-    // // @ts-ignore
-    // delete rabbyProvider.on;
-    // // @ts-ignore
-    // delete rabbyProvider.isRabby;
-    // // @ts-ignore
-    // delete rabbyProvider._isRabby;
-    // Object.keys(finalProvider).forEach((key) => {
-    //   window.ethereum[key] = (finalProvider as EthereumProvider)[key];
-    // });
-    Object.defineProperty(window, "ethereum", {
-      value: cacheOtherProvider,
-    });
-  }
-  rabbyProvider._isReady = true;
-  provider._cacheEventListenersBeforeReady.forEach(([event, handler]) => {
-    (finalProvider as EthereumProvider).on(event, handler);
-  });
-  provider._cacheRequestsBeforeReady.forEach(({ resolve, reject, data }) => {
-    (finalProvider as EthereumProvider)
-      .request(data)
-      .then(resolve)
-      .catch(reject);
-  });
-};
-
-initProvider(!!__rabby__isDefaultWallet);
 
 window.dispatchEvent(new Event("ethereum#initialized"));
