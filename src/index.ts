@@ -289,10 +289,13 @@ declare global {
   interface Window {
     ethereum: EthereumProvider;
     web3: any;
+    rabby: EthereumProvider;
   }
 }
 
 const provider = new EthereumProvider();
+window.rabby = new EthereumProvider();
+window.rabby._isReady = true;
 patchProvider(provider);
 let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
