@@ -13,6 +13,7 @@ import { getProviderMode, patchProvider } from "./utils/metamask";
 declare const __rabby__channelName;
 declare const __rabby__isDefaultWallet;
 declare const __rabby__uuid;
+declare const __rabby__isOpera;
 
 const log = (event, ...args) => {
   if (process.env.NODE_ENV !== "production") {
@@ -367,6 +368,14 @@ const setRabbyProvider = (isDefaultWallet: boolean) => {
   }
 };
 
+const initOperaProvider = () => {
+  window.ethereum = rabbyProvider;
+  rabbyProvider._isReady = true;
+  window.rabby = rabbyProvider;
+  patchProvider(rabbyProvider);
+  rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+};
+
 const setOtherProvider = (otherProvider: EthereumProvider) => {
   if (window.ethereum === otherProvider) {
     return;
@@ -411,7 +420,11 @@ const initProvider = (isDefaultWallet: boolean) => {
   window.rabby = rabbyProvider;
 };
 
-initProvider(!!__rabby__isDefaultWallet);
+if (__rabby__isOpera) {
+  initOperaProvider();
+} else {
+  initProvider(!!__rabby__isDefaultWallet);
+}
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
   const info: EIP6963ProviderInfo = {
