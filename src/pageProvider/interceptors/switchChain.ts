@@ -14,7 +14,7 @@ interface Chain {
 
 export const switchChainNotice = (
   chain: Chain & {
-    prev: Chain;
+    prev?: Chain;
   }
 ) => {
   if (instance) {
@@ -34,7 +34,7 @@ export const switchChainNotice = (
       <div style="display: flex; align-items: center; justify-content: center;">
         ${rawContent}
       </div>
-      <div style="display: flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #D3D8E0;border-top-width:0.5px;">
+      <div style="display: flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #d3d8e0;border-top-width:0.5px;">
         <img style="width: 14px;" src="${IconWarning}"/>
         ${
           isSwitchToMainnet
