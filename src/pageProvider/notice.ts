@@ -114,7 +114,7 @@ const styles = `
     }
     .rabby-notice {
       min-width: 230px;
-      height: 44px;
+      min-height: 44px;
       background: #FFFFFF;
       border: 1px solid #8697FF;
       border: 1.5px solid #8697FF;
