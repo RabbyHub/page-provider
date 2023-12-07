@@ -1,10 +1,14 @@
 import IconMetamask from "../../assets/metamask.svg";
 import IconRabby from "../../assets/rabby.svg";
 import notice from "../notice";
+import { isInSameOriginIframe } from "../../utils/iframe";
 
 let instance: ReturnType<typeof notice> | null;
 
 export const switchWalletNotice = (type: "rabby" | "metamask") => {
+  if (isInSameOriginIframe()) {
+    return;
+  }
   const titles = {
     rabby: "Rabby",
     metamask: "MetaMask",

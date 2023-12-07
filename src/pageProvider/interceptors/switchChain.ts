@@ -2,6 +2,7 @@ import IconRabby from "../../assets/rabby.svg";
 import IconWarning from "../../assets/warning.svg";
 import IconArrow from "../../assets/arrow.svg";
 import notice from "../notice";
+import { isInSameOriginIframe } from "../../utils/iframe";
 
 let instance: ReturnType<typeof notice> | null;
 
@@ -17,6 +18,9 @@ export const switchChainNotice = (
     prev?: Chain;
   }
 ) => {
+  if (isInSameOriginIframe()) {
+    return;
+  }
   if (instance) {
     instance.hide();
     instance = null;
