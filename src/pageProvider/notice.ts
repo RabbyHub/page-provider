@@ -62,13 +62,6 @@ class Notice {
   }
 
   registerEvents() {
-    if (this.options.timeout) {
-      this.events.mouseover = () => this.stopTimer();
-      this.events.mouseleave = () => this.startTimer();
-      this.el?.addEventListener("mouseover", this.events.mouseover, false);
-      this.el?.addEventListener("mouseleave", this.events.mouseleave, false);
-    }
-
     this.events.hide = () => this.hide();
 
     this.closeButton?.addEventListener("click", this.events.hide, false);
