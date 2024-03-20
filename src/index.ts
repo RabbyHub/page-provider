@@ -38,15 +38,19 @@ let uuid = typeof __rabby__uuid !== "undefined" ? __rabby__uuid : "";
 const getParams = () => {
   if (localStorage.getItem("rabby:channelName")) {
     channelName = localStorage.getItem("rabby:channelName") as string;
+    localStorage.removeItem("rabby:channelName");
   }
   if (localStorage.getItem("rabby:isDefaultWallet")) {
     isDefaultWallet = localStorage.getItem("rabby:isDefaultWallet") === "true";
+    localStorage.removeItem("rabby:isDefaultWallet");
   }
   if (localStorage.getItem("rabby:uuid")) {
     uuid = localStorage.getItem("rabby:uuid") as string;
+    localStorage.removeItem("rabby:uuid");
   }
   if (localStorage.getItem("rabby:isOpera")) {
     isOpera = localStorage.getItem("rabby:isOpera") === "true";
+    localStorage.removeItem("rabby:isOpera");
   }
 };
 getParams();
