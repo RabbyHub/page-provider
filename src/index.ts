@@ -30,28 +30,23 @@ let channelName =
 let isDefaultWallet =
   typeof __rabby__isDefaultWallet !== "undefined"
     ? __rabby__isDefaultWallet
-    : "";
-let isOpera = typeof __rabby__isOpera !== "undefined" ? __rabby__isOpera : "";
+    : false;
+let isOpera =
+  typeof __rabby__isOpera !== "undefined" ? __rabby__isOpera : false;
 let uuid = typeof __rabby__uuid !== "undefined" ? __rabby__uuid : "";
 
 const getParams = () => {
-  if (document.body.dataset.__rabby__channelName) {
-    channelName = document.body.dataset.__rabby__channelName;
-    delete document.body.dataset.__rabby__channelName;
+  if (localStorage.getItem("rabby:channelName")) {
+    channelName = localStorage.getItem("rabby:channelName") as string;
   }
-  if (document.body.dataset.__rabby__isDefaultWallet) {
-    isDefaultWallet = document.body.dataset.__rabby__isDefaultWallet;
-    delete document.body.dataset.__rabby__isDefaultWallet;
+  if (localStorage.getItem("rabby:isDefaultWallet")) {
+    isDefaultWallet = localStorage.getItem("rabby:isDefaultWallet") === "true";
   }
-
-  if (document.body.dataset.__rabby__isOpera) {
-    isOpera = document.body.dataset.__rabby__isOpera;
-    delete document.body.dataset.__rabby__isOpera;
+  if (localStorage.getItem("rabby:uuid")) {
+    uuid = localStorage.getItem("rabby:uuid") as string;
   }
-
-  if (document.body.dataset.__rabby__uuid) {
-    uuid = document.body.dataset.__rabby__uuid;
-    delete document.body.dataset.__rabby__uuid;
+  if (localStorage.getItem("rabby:isOpera")) {
+    isOpera = localStorage.getItem("rabby:isOpera") === "true";
   }
 };
 getParams();
