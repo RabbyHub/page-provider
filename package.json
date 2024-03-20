@@ -1,6 +1,6 @@
 {
   "name": "@rabby-wallet/page-provider",
-  "version": "0.2.0-beta.2",
+  "version": "0.2.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
