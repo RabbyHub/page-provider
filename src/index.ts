@@ -403,60 +403,68 @@ const initProvider = () => {
       currentProvider: rabbyProvider,
     };
   }
-  try {
-    Object.defineProperties(window, {
-      rabby: {
-        value: rabbyProvider,
-        configurable: false,
-        writable: false,
-      },
-      ethereum: {
-        get() {
-          return window.rabbyWalletRouter.currentProvider;
+  const descriptor = Object.getOwnPropertyDescriptor(window, "ethereum");
+  const canDefine = !descriptor || descriptor.configurable;
+  if (canDefine) {
+    try {
+      Object.defineProperties(window, {
+        rabby: {
+          value: rabbyProvider,
+          configurable: false,
+          writable: false,
         },
-        set(newProvider) {
-          window.rabbyWalletRouter.addProvider(newProvider);
+        ethereum: {
+          get() {
+            return window.rabbyWalletRouter.currentProvider;
+          },
+          set(newProvider) {
+            window.rabbyWalletRouter.addProvider(newProvider);
+          },
+          configurable: false,
         },
-        configurable: false,
-      },
-      walletRouter: {
-        value: {
-          rabbyProvider,
-          lastInjectedProvider: window.ethereum,
-          currentProvider: rabbyProvider,
-          providers: [
+        rabbyWalletRouter: {
+          value: {
             rabbyProvider,
-            ...(window.ethereum ? [window.ethereum] : []),
-          ],
-          setDefaultProvider(rabbyAsDefault: boolean) {
-            if (rabbyAsDefault) {
-              window.rabbyWalletRouter.currentProvider = window.rabby;
-            } else {
-              const nonDefaultProvider =
-                window.rabbyWalletRouter.lastInjectedProvider ??
-                window.ethereum;
-              window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
-            }
+            lastInjectedProvider: window.ethereum,
+            currentProvider: rabbyProvider,
+            providers: [
+              rabbyProvider,
+              ...(window.ethereum ? [window.ethereum] : []),
+            ],
+            setDefaultProvider(rabbyAsDefault: boolean) {
+              if (rabbyAsDefault) {
+                window.rabbyWalletRouter.currentProvider = window.rabby;
+              } else {
+                const nonDefaultProvider =
+                  window.rabbyWalletRouter.lastInjectedProvider ??
+                  window.ethereum;
+                window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
+              }
+            },
+            addProvider(provider) {
+              if (!window.rabbyWalletRouter.providers.includes(provider)) {
+                window.rabbyWalletRouter.providers.push(provider);
+              }
+              if (rabbyProvider !== provider) {
+                requestHasOtherProvider();
+                window.rabbyWalletRouter.lastInjectedProvider = provider;
+              }
+            },
           },
-          addProvider(provider) {
-            if (!window.rabbyWalletRouter.providers.includes(provider)) {
-              window.rabbyWalletRouter.providers.push(provider);
-            }
-            if (rabbyProvider !== provider) {
-              requestHasOtherProvider();
-              window.rabbyWalletRouter.lastInjectedProvider = provider;
-            }
-          },
+          configurable: false,
+          writable: false,
         },
-        configurable: false,
-        writable: false,
-      },
-    });
-  } catch (e) {
-    // think that defineProperty failed means there is any other wallet
-    requestHasOtherProvider();
-    console.error(e);
+      });
+    } catch (e) {
+      // think that defineProperty failed means there is any other wallet
+      requestHasOtherProvider();
+      console.error(e);
+      window.ethereum = rabbyProvider;
+      window.rabby = rabbyProvider;
+    }
+  } else {
     window.ethereum = rabbyProvider;
+    window.rabby = rabbyProvider;
   }
 };
 
