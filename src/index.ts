@@ -468,6 +468,9 @@ if (isOpera) {
 
 requestIsDefaultWallet().then((rabbyAsDefault) => {
   window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
+  if (rabbyAsDefault) {
+    window.ethereum = rabbyProvider;
+  }
 });
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
