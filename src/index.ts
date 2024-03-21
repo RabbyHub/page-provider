@@ -343,12 +343,19 @@ declare global {
     ethereum: EthereumProvider;
     web3: any;
     rabby: EthereumProvider;
+    rabbyWalletRouter: {
+      rabbyProvider: EthereumProvider;
+      lastInjectedProvider?: EthereumProvider;
+      currentProvider: EthereumProvider;
+      providers: EthereumProvider[];
+      setDefaultProvider: (rabbyAsDefault: boolean) => void;
+      addProvider: (provider: EthereumProvider) => void;
+    };
   }
 }
 
 const provider = new EthereumProvider();
 patchProvider(provider);
-let cacheOtherProvider: EthereumProvider | null = null;
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
     if (
@@ -369,33 +376,11 @@ const requestHasOtherProvider = () => {
   });
 };
 
-const setRabbyProvider = (isDefaultWallet: boolean) => {
-  try {
-    Object.defineProperty(window, "ethereum", {
-      configurable: !isDefaultWallet,
-      enumerable: true,
-      set(val) {
-        if (val?._isRabby) {
-          return;
-        }
-        requestHasOtherProvider();
-        cacheOtherProvider = val;
-        return rabbyProvider;
-      },
-      get() {
-        return isDefaultWallet
-          ? rabbyProvider
-          : cacheOtherProvider
-          ? cacheOtherProvider
-          : rabbyProvider;
-      },
-    });
-  } catch (e) {
-    // think that defineProperty failed means there is any other wallet
-    requestHasOtherProvider();
-    console.error(e);
-    window.ethereum = rabbyProvider;
-  }
+const requestIsDefaultWallet = () => {
+  return provider.requestInternalMethods({
+    method: "isDefaultWallet",
+    params: [],
+  }) as Promise<boolean>;
 };
 
 const initOperaProvider = () => {
@@ -406,55 +391,84 @@ const initOperaProvider = () => {
   rabbyProvider.on("rabby:chainChanged", switchChainNotice);
 };
 
-const setOtherProvider = (otherProvider: EthereumProvider) => {
-  if (window.ethereum === otherProvider) {
-    return;
-  }
-  const existingProvider = Object.getOwnPropertyDescriptor(window, "ethereum");
-  if (existingProvider?.configurable) {
-    Object.defineProperty(window, "ethereum", {
-      value: otherProvider,
-      writable: true,
-      configurable: true,
-      enumerable: true,
-    });
-  } else {
-    window.ethereum = otherProvider;
-  }
-};
-
-const initProvider = (isDefaultWallet: boolean) => {
+const initProvider = () => {
   rabbyProvider._isReady = true;
   rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
-  let finalProvider: EthereumProvider | null = null;
-
-  if (window.ethereum && !window.ethereum._isRabby) {
+  patchProvider(rabbyProvider);
+  if (window.ethereum) {
     requestHasOtherProvider();
-    cacheOtherProvider = window.ethereum;
-  }
-
-  if (isDefaultWallet || !cacheOtherProvider) {
-    finalProvider = rabbyProvider;
-    patchProvider(rabbyProvider);
-    setRabbyProvider(isDefaultWallet);
-    rabbyProvider.on("rabby:chainChanged", switchChainNotice);
-  } else {
-    finalProvider = cacheOtherProvider;
-    setOtherProvider(cacheOtherProvider);
   }
   if (!window.web3) {
     window.web3 = {
-      currentProvider: finalProvider,
+      currentProvider: rabbyProvider,
     };
   }
-  window.rabby = rabbyProvider;
+  try {
+    Object.defineProperties(window, {
+      rabby: {
+        value: rabbyProvider,
+        configurable: false,
+        writable: false,
+      },
+      ethereum: {
+        get() {
+          return window.rabbyWalletRouter.currentProvider;
+        },
+        set(newProvider) {
+          window.rabbyWalletRouter.addProvider(newProvider);
+        },
+        configurable: false,
+      },
+      walletRouter: {
+        value: {
+          rabbyProvider,
+          lastInjectedProvider: window.ethereum,
+          currentProvider: rabbyProvider,
+          providers: [
+            rabbyProvider,
+            ...(window.ethereum ? [window.ethereum] : []),
+          ],
+          setDefaultProvider(rabbyAsDefault: boolean) {
+            if (rabbyAsDefault) {
+              window.rabbyWalletRouter.currentProvider = window.rabby;
+            } else {
+              const nonDefaultProvider =
+                window.rabbyWalletRouter.lastInjectedProvider ??
+                window.ethereum;
+              window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
+            }
+          },
+          addProvider(provider) {
+            if (!window.rabbyWalletRouter.providers.includes(provider)) {
+              window.rabbyWalletRouter.providers.push(provider);
+            }
+            if (rabbyProvider !== provider) {
+              requestHasOtherProvider();
+              window.rabbyWalletRouter.lastInjectedProvider = provider;
+            }
+          },
+        },
+        configurable: false,
+        writable: false,
+      },
+    });
+  } catch (e) {
+    // think that defineProperty failed means there is any other wallet
+    requestHasOtherProvider();
+    console.error(e);
+    window.ethereum = rabbyProvider;
+  }
 };
 
 if (isOpera) {
   initOperaProvider();
 } else {
-  initProvider(!!isDefaultWallet);
+  initProvider();
 }
+
+requestIsDefaultWallet().then((rabbyAsDefault) => {
+  window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
+});
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
   const info: EIP6963ProviderInfo = {
