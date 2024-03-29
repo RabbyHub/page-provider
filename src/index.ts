@@ -478,6 +478,7 @@ requestIsDefaultWallet().then((rabbyAsDefault) => {
   window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
   if (rabbyAsDefault) {
     window.ethereum = rabbyProvider;
+    rabbyProvider.on("rabby:chainChanged", switchChainNotice);
   }
 });
 
