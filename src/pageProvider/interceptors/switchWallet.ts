@@ -21,15 +21,15 @@ export const switchWalletNotice = (type: "rabby" | "metamask") => {
     closeable: true,
     timeout: 0,
     className: "rabby-notice-default-wallet",
-    content: `<div style="display: flex; align-items: center; gap: 12px;">
+    content: `<div style="display: flex; align-items: center; gap: 12px; color: #13141A;">
       <img style="width: 28px;" src="${
         type === "rabby" ? IconRabby : IconMetamask
       }"/>
-      <div>
-        <div><span style="font-weight: bold;">${
+      <div style="color: #13141A;">
+        <div style="color: #13141A;"><span style="font-weight: bold; color: #13141A;">${
           titles[type]
         }</span> is your default wallet now. </div>
-        <div>
+        <div style="color: #13141A;">
         Please <a
           href="javascript:window.location.reload();"
           style="color: #8697FF; text-decoration: underline;">refresh the web page</a> 
