@@ -35,10 +35,10 @@ export const switchChainNotice = (
   if (isSwitchToMainnet || isSwitchToTestnet) {
     content = `
     <div>
-      <div style="display: flex; align-items: center; justify-content: center;">
+      <div style="display: flex; align-items: center; justify-content: center; color: #13141A;">
         ${rawContent}
       </div>
-      <div style="display: flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #d3d8e0;border-top-width:0.5px;">
+      <div style="display: flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #d3d8e0;border-top-width:0.5px; color: #13141A;">
         <img style="width: 14px;" src="${IconWarning}"/>
         ${
           isSwitchToMainnet

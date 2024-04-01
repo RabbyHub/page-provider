@@ -135,6 +135,7 @@ const styles = `
     .rabby-notice-content {
       display: flex;
       align-items: center;
+      color: #13141A;
     }
     .rabby-notice-is-hide {
       opacity: 0;
@@ -153,6 +154,7 @@ const styles = `
     }
     .rabby-strong {
       font-weight: bold;
+      color: #13141A;
     }
     .rabby-notice-default-wallet {
       border-radius: 12px;
