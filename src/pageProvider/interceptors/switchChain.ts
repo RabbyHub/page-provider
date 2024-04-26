@@ -27,11 +27,7 @@ export const switchChainNotice = (
     instance = null;
   }
 
-  const rawContent = `<img style="width: 20px; height: 20px; margin-right: 8px;" src="${
-    chain?.logo || IconRabby
-  }"/>Network switched to <span class="rabby-strong" style="margin: 0 8px;">${
-    chain?.name
-  }</span>`;
+  const rawContent = `<img style="width: 20px; height: 20px; margin-right: 8px;" src="${IconRabby}"/>Network switched to <span class="rabby-strong" style="margin: 0 8px;">${chain?.name}</span>`;
   let content = rawContent;
 
   instance = notice({
