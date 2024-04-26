@@ -104,16 +104,22 @@ const styles = `
       z-index: 99999;
       top: 60px;
       right: 42px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto, sans-serif;
     }
+    .rabby-notice-container * {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto, sans-serif;
+      color: #192945; 
+    }
+
     .rabby-notice {
       min-width: 230px;
       min-height: 44px;
       background: #FFFFFF;
-      border: 1px solid #8697FF;
-      border: 1.5px solid #8697FF;
+      border: 1px solid #7084FF;
+      border: 1.5px solid #7084FF;
       box-sizing: border-box;
       box-shadow: 0px 24px 40px rgba(134, 151, 255, 0.12);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
 
@@ -122,7 +128,7 @@ const styles = `
       font-weight: 400;
       font-size: 14px;
       line-height: 16px;
-      color: #13141A;
+      color: #192945;
 
       padding: 12px;
       gap: 8px;
@@ -135,7 +141,7 @@ const styles = `
     .rabby-notice-content {
       display: flex;
       align-items: center;
-      color: #13141A;
+      color: #192945;
     }
     .rabby-notice-is-hide {
       opacity: 0;
@@ -154,7 +160,7 @@ const styles = `
     }
     .rabby-strong {
       font-weight: bold;
-      color: #13141A;
+      color: #192945;
     }
     .rabby-notice-default-wallet {
       border-radius: 12px;
@@ -165,7 +171,7 @@ const styles = `
       font-size: 12px;
       line-height: 16px;
 
-      color: #13141A;
+      color: #192945;
     }
   `;
 
