@@ -405,14 +405,66 @@ const initProvider = () => {
   }
   const descriptor = Object.getOwnPropertyDescriptor(window, "ethereum");
   const canDefine = !descriptor || descriptor.configurable;
+  try {
+    Object.defineProperties(window, {
+      rabby: {
+        value: rabbyProvider,
+        configurable: false,
+        writable: false,
+      },
+      rabbyWalletRouter: {
+        value: {
+          rabbyProvider,
+          lastInjectedProvider: window.ethereum,
+          currentProvider: rabbyProvider,
+          providers: [
+            rabbyProvider,
+            ...(window.ethereum ? [window.ethereum] : []),
+          ],
+          setDefaultProvider(rabbyAsDefault: boolean) {
+            const lastInjectedOtherProvider =
+              window.rabbyWalletRouter.lastInjectedProvider ||
+              eip6963Providers.reverse().find((item) => {
+                return item.provider !== rabbyProvider;
+              })?.provider;
+            if (canDefine) {
+              if (rabbyAsDefault || !lastInjectedOtherProvider) {
+                window.rabbyWalletRouter.currentProvider = rabbyProvider;
+                rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+              } else {
+                window.rabbyWalletRouter.currentProvider =
+                  lastInjectedOtherProvider || window.ethereum;
+              }
+            } else {
+              if (rabbyAsDefault || !lastInjectedOtherProvider) {
+                window.ethereum = rabbyProvider;
+                rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+              } else {
+                window.ethereum = lastInjectedOtherProvider || window.ethereum;
+              }
+            }
+          },
+          addProvider(provider) {
+            if (!window.rabbyWalletRouter.providers.includes(provider)) {
+              window.rabbyWalletRouter.providers.push(provider);
+            }
+            if (rabbyProvider !== provider) {
+              requestHasOtherProvider();
+              window.rabbyWalletRouter.lastInjectedProvider = provider;
+            }
+          },
+        },
+        configurable: false,
+        writable: false,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    window.rabby = rabbyProvider;
+  }
   if (canDefine) {
     try {
       Object.defineProperties(window, {
-        rabby: {
-          value: rabbyProvider,
-          configurable: false,
-          writable: false,
-        },
         ethereum: {
           get() {
             return window.rabbyWalletRouter.currentProvider;
@@ -422,49 +474,14 @@ const initProvider = () => {
           },
           configurable: false,
         },
-        rabbyWalletRouter: {
-          value: {
-            rabbyProvider,
-            lastInjectedProvider: window.ethereum,
-            currentProvider: rabbyProvider,
-            providers: [
-              rabbyProvider,
-              ...(window.ethereum ? [window.ethereum] : []),
-            ],
-            setDefaultProvider(rabbyAsDefault: boolean) {
-              if (rabbyAsDefault) {
-                window.rabbyWalletRouter.currentProvider = window.rabby;
-              } else {
-                const nonDefaultProvider =
-                  window.rabbyWalletRouter.lastInjectedProvider ??
-                  window.ethereum;
-                window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
-              }
-            },
-            addProvider(provider) {
-              if (!window.rabbyWalletRouter.providers.includes(provider)) {
-                window.rabbyWalletRouter.providers.push(provider);
-              }
-              if (rabbyProvider !== provider) {
-                requestHasOtherProvider();
-                window.rabbyWalletRouter.lastInjectedProvider = provider;
-              }
-            },
-          },
-          configurable: false,
-          writable: false,
-        },
       });
     } catch (e) {
-      // think that defineProperty failed means there is any other wallet
-      requestHasOtherProvider();
       console.error(e);
+      requestHasOtherProvider();
       window.ethereum = rabbyProvider;
-      window.rabby = rabbyProvider;
     }
   } else {
     window.ethereum = rabbyProvider;
-    window.rabby = rabbyProvider;
   }
 };
 
@@ -474,12 +491,26 @@ if (isOpera) {
   initProvider();
 }
 
+const eip6963Providers: EIP6963ProviderDetail[] = [];
+
+function onAnnounceProvider() {
+  window.addEventListener<any>(
+    "eip6963:announceProvider",
+    (event: EIP6963AnnounceProviderEvent) => {
+      if (eip6963Providers.find((p) => p.provider === event.detail.provider)) {
+        return;
+      }
+      eip6963Providers.push(event.detail);
+    }
+  );
+
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+}
+
+domReadyCall(onAnnounceProvider);
+
 requestIsDefaultWallet().then((rabbyAsDefault) => {
   window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
-  if (rabbyAsDefault) {
-    window.ethereum = rabbyProvider;
-    rabbyProvider.on("rabby:chainChanged", switchChainNotice);
-  }
 });
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
