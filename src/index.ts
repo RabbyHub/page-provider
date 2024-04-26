@@ -440,6 +440,12 @@ const initProvider = () => {
                   window.ethereum;
                 window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
               }
+              if (
+                rabbyAsDefault ||
+                !window.rabbyWalletRouter.lastInjectedProvider
+              ) {
+                rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+              }
             },
             addProvider(provider) {
               if (!window.rabbyWalletRouter.providers.includes(provider)) {
@@ -476,10 +482,6 @@ if (isOpera) {
 
 requestIsDefaultWallet().then((rabbyAsDefault) => {
   window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
-  if (rabbyAsDefault) {
-    window.ethereum = rabbyProvider;
-    rabbyProvider.on("rabby:chainChanged", switchChainNotice);
-  }
 });
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
