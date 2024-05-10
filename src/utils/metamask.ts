@@ -11,6 +11,7 @@ const impersonateMetamaskWhitelist = [
 
   // rainbow
   "telx.network",
+  "portfolio.metamask.io",
 ];
 
 // keep isRabby and remove isMetaMask
