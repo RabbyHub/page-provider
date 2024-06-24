@@ -3,17 +3,12 @@ import { EventEmitter } from "events";
 import { ethErrors, serializeError } from "eth-rpc-errors";
 import BroadcastChannelMessage from "./utils/message/broadcastChannelMessage";
 import PushEventHandlers from "./pageProvider/pushEventHandlers";
-import { domReadyCall, $ } from "./pageProvider/utils";
+import { domReadyCall, $, genUUID } from "./pageProvider/utils";
 import ReadyPromise from "./pageProvider/readyPromise";
 import DedupePromise from "./pageProvider/dedupePromise";
 import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
 import { getProviderMode, patchProvider } from "./utils/metamask";
-
-declare const __rabby__channelName;
-declare const __rabby__isDefaultWallet;
-declare const __rabby__uuid;
-declare const __rabby__isOpera;
 
 const log = (event, ...args) => {
   if (process.env.NODE_ENV !== "production") {
@@ -25,35 +20,8 @@ const log = (event, ...args) => {
   }
 };
 
-let channelName =
-  typeof __rabby__channelName !== "undefined" ? __rabby__channelName : "";
-let isDefaultWallet =
-  typeof __rabby__isDefaultWallet !== "undefined"
-    ? __rabby__isDefaultWallet
-    : false;
-let isOpera =
-  typeof __rabby__isOpera !== "undefined" ? __rabby__isOpera : false;
-let uuid = typeof __rabby__uuid !== "undefined" ? __rabby__uuid : "";
-
-const getParams = () => {
-  if (localStorage.getItem("rabby:channelName")) {
-    channelName = localStorage.getItem("rabby:channelName") as string;
-    localStorage.removeItem("rabby:channelName");
-  }
-  if (localStorage.getItem("rabby:isDefaultWallet")) {
-    isDefaultWallet = localStorage.getItem("rabby:isDefaultWallet") === "true";
-    localStorage.removeItem("rabby:isDefaultWallet");
-  }
-  if (localStorage.getItem("rabby:uuid")) {
-    uuid = localStorage.getItem("rabby:uuid") as string;
-    localStorage.removeItem("rabby:uuid");
-  }
-  if (localStorage.getItem("rabby:isOpera")) {
-    isOpera = localStorage.getItem("rabby:isOpera") === "true";
-    localStorage.removeItem("rabby:isOpera");
-  }
-};
-getParams();
+let isOpera = /Opera|OPR\//i.test(navigator.userAgent);
+let uuid = genUUID();
 
 export interface Interceptor {
   onRequest?: (data: any) => any;
@@ -127,7 +95,10 @@ export class EthereumProvider extends EventEmitter {
   private _pushEventHandlers: PushEventHandlers;
   private _requestPromise = new ReadyPromise(2);
   private _dedupePromise = new DedupePromise([]);
-  private _bcm = new BroadcastChannelMessage(channelName);
+  private _bcm = new BroadcastChannelMessage({
+    name: "rabby-page-provider",
+    target: "rabby-content-script",
+  });
 
   constructor({ maxListeners = 100 } = {}) {
     super();
