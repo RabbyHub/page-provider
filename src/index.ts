@@ -56,6 +56,23 @@ interface EIP6963RequestProviderEvent extends Event {
   type: "eip6963:requestProvider";
 }
 
+const doTabCheckIn = (request: (data: any) => void) => {
+  const origin = location.origin;
+  const icon =
+    ($('head > link[rel~="icon"]') as HTMLLinkElement)?.href ||
+    ($('head > meta[itemprop="image"]') as HTMLMetaElement)?.content;
+
+  const name =
+    document.title ||
+    ($('head > meta[name="title"]') as HTMLMetaElement)?.content ||
+    origin;
+
+  request({
+    method: "tabCheckin",
+    params: { icon, name, origin },
+  });
+};
+
 export class EthereumProvider extends EventEmitter {
   chainId: string | null = null;
   selectedAddress: string | null = null;
@@ -116,21 +133,7 @@ export class EthereumProvider extends EventEmitter {
 
     this._bcm.connect().on("message", this._handleBackgroundMessage);
     domReadyCall(() => {
-      const origin = location.origin;
-      const icon =
-        ($('head > link[rel~="icon"]') as HTMLLinkElement)?.href ||
-        ($('head > meta[itemprop="image"]') as HTMLMetaElement)?.content;
-
-      const name =
-        document.title ||
-        ($('head > meta[name="title"]') as HTMLMetaElement)?.content ||
-        origin;
-
-      this._bcm.request({
-        method: "tabCheckin",
-        params: { icon, name, origin },
-      });
-
+      doTabCheckIn(this._bcm.request);
       this._requestPromise.check(2);
     });
 
@@ -365,6 +368,9 @@ const initOperaProvider = () => {
 const initProvider = () => {
   rabbyProvider._isReady = true;
   rabbyProvider.on("defaultWalletChanged", switchWalletNotice);
+  rabbyProvider.on("contentScriptConnected", () => {
+    doTabCheckIn(rabbyProvider.request);
+  });
   patchProvider(rabbyProvider);
   if (window.ethereum) {
     requestHasOtherProvider();
