@@ -499,10 +499,14 @@ function onAnnounceProvider() {
     "eip6963:announceProvider",
     (event: EIP6963AnnounceProviderEvent) => {
       if (
+        event.detail.info.rdns === "io.rabby" ||
+        event.detail.provider === rabbyProvider
+      ) {
+        return;
+      }
+      if (
         rabbyEthereumProvider.eip6963ProviderDetails.find(
-          (p) =>
-            p.provider === event.detail.provider ||
-            event.detail.info.rdns === "io.rabby"
+          (p) => p.provider === event.detail.provider
         )
       ) {
         return;
@@ -543,9 +547,11 @@ requestCurrentProvider().then((rdns) => {
         .catch(reject);
     }
   );
+  rabbyProvider.on("rabby:chainChanged", switchChainNotice);
   window.dispatchEvent(new Event("ethereum#initialized"));
 });
 
+const metamaskModeUuid = genUUID();
 const announceEip6963Provider = (provider: EthereumProvider) => {
   const info: EIP6963ProviderInfo = {
     uuid: uuid,
@@ -554,6 +560,11 @@ const announceEip6963Provider = (provider: EthereumProvider) => {
     rdns: "io.rabby",
   };
 
+  if (window.__rabby__inject__?.isMetamaskMode) {
+    info.uuid = metamaskModeUuid;
+    info.name = "MetaMask";
+    info.rdns = "io.metamask";
+  }
   window.dispatchEvent(
     new CustomEvent("eip6963:announceProvider", {
       detail: Object.freeze({ info, provider }),
