@@ -8,7 +8,6 @@ import ReadyPromise from "./pageProvider/readyPromise";
 import DedupePromise from "./pageProvider/dedupePromise";
 import { switchChainNotice } from "./pageProvider/interceptors/switchChain";
 import { switchWalletNotice } from "./pageProvider/interceptors/switchWallet";
-import { getProviderMode, patchProvider } from "./utils/metamask";
 
 const log = (event, ...args) => {
   if (process.env.NODE_ENV !== "production") {
@@ -81,7 +80,7 @@ export class EthereumProvider extends EventEmitter {
    * @deprecated
    */
   networkVersion: string | null = null;
-  isRabby = true;
+  isRabby? = true;
   isMetaMask = true;
   _isRabby = true;
 
@@ -89,6 +88,9 @@ export class EthereumProvider extends EventEmitter {
   _isConnected = false;
   _initialized = false;
   _isUnlocked = false;
+  _isEip6963 = true;
+  eip6963ProviderDetails: EIP6963ProviderDetail[] = [];
+  currentProvider?: EthereumProvider;
 
   _cacheRequestsBeforeReady: any[] = [];
   _cacheEventListenersBeforeReady: [string | symbol, () => any][] = [];
@@ -117,12 +119,22 @@ export class EthereumProvider extends EventEmitter {
     target: "rabby-content-script",
   });
 
-  constructor({ maxListeners = 100 } = {}) {
+  constructor({
+    maxListeners = 100,
+    isEip6963 = true,
+    isMetamaskMode = false,
+  } = {}) {
     super();
+
+    this._isEip6963 = isEip6963;
     this.setMaxListeners(maxListeners);
     this.initialize();
     this.shimLegacy();
     this._pushEventHandlers = new PushEventHandlers(this);
+    if (isMetamaskMode) {
+      this.isMetaMask = true;
+      delete this.isRabby;
+    }
   }
 
   initialize = async () => {
@@ -197,7 +209,49 @@ export class EthereumProvider extends EventEmitter {
       });
       return promise;
     }
-    return this._dedupePromise.call(data.method, () => this._request(data));
+
+    return this._dedupePromise.call(data.method, () =>
+      this._request(
+        this._isEip6963
+          ? data
+          : {
+              ...data,
+              $ctx: {
+                providers: this.eip6963ProviderDetails.map((item) => {
+                  return item.info;
+                }),
+              },
+            }
+      ).then(
+        (r) => {
+          /**
+           * relay
+           */
+          if (this.currentProvider) {
+            return this.currentProvider.request(data);
+          }
+          return r;
+        },
+        (e) => {
+          if (this.currentProvider) {
+            return this.currentProvider.request(data);
+          }
+          throw e;
+        }
+      )
+    );
+  };
+
+  proxyRequest = async (data) => {
+    if (data?.method == "wallet_revokePermissions") {
+      this.request(data).then(() => {
+        this.currentProvider = undefined;
+      });
+    }
+    if (this.currentProvider) {
+      return this.currentProvider?.request(data);
+    }
+    return this.request(data);
   };
 
   _request = async (data) => {
@@ -321,15 +375,23 @@ declare global {
       rabbyProvider: EthereumProvider;
       lastInjectedProvider?: EthereumProvider;
       currentProvider: EthereumProvider;
-      providers: EthereumProvider[];
+      providers: EIP6963ProviderDetail[];
       setDefaultProvider: (rabbyAsDefault: boolean) => void;
       addProvider: (provider: EthereumProvider) => void;
     };
+    __rabby__inject__?: Record<string, any>;
   }
 }
 
-const provider = new EthereumProvider();
-patchProvider(provider);
+const provider = new EthereumProvider({
+  isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
+});
+const rabbyEthereumProvider = new EthereumProvider({
+  isEip6963: false,
+  isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
+});
+
+// patchProvider(provider);
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
     if (
@@ -350,18 +412,18 @@ const requestHasOtherProvider = () => {
   });
 };
 
-const requestIsDefaultWallet = () => {
+const requestCurrentProvider = () => {
   return provider.requestInternalMethods({
-    method: "isDefaultWallet",
+    method: "rabby:getProvider",
     params: [],
-  }) as Promise<boolean>;
+  }) as Promise<string>;
 };
 
 const initOperaProvider = () => {
   window.ethereum = rabbyProvider;
   rabbyProvider._isReady = true;
   window.rabby = rabbyProvider;
-  patchProvider(rabbyProvider);
+  // patchProvider(rabbyProvider);
   rabbyProvider.on("rabby:chainChanged", switchChainNotice);
 };
 
@@ -371,7 +433,7 @@ const initProvider = () => {
   rabbyProvider.on("contentScriptConnected", () => {
     doTabCheckIn(rabbyProvider.request);
   });
-  patchProvider(rabbyProvider);
+  // patchProvider(rabbyProvider);
   if (window.ethereum) {
     requestHasOtherProvider();
   }
@@ -382,72 +444,47 @@ const initProvider = () => {
   }
   const descriptor = Object.getOwnPropertyDescriptor(window, "ethereum");
   const canDefine = !descriptor || descriptor.configurable;
+  Object.defineProperty(window, "rabbyWalletRouter", {
+    value: {
+      rabbyProvider,
+      rabbyEthereumProvider,
+      lastInjectedProvider: window.ethereum,
+      currentProvider: rabbyEthereumProvider,
+    },
+    configurable: false,
+    writable: false,
+  });
+  Object.defineProperty(window, "rabby", {
+    value: rabbyProvider,
+    configurable: false,
+    writable: false,
+  });
   if (canDefine) {
     try {
-      Object.defineProperties(window, {
-        rabby: {
-          value: rabbyProvider,
-          configurable: false,
-          writable: false,
-        },
-        ethereum: {
-          get() {
-            return window.rabbyWalletRouter.currentProvider;
-          },
-          set(newProvider) {
-            window.rabbyWalletRouter.addProvider(newProvider);
-          },
-          configurable: false,
-        },
-        rabbyWalletRouter: {
-          value: {
-            rabbyProvider,
-            lastInjectedProvider: window.ethereum,
-            currentProvider: rabbyProvider,
-            providers: [
-              rabbyProvider,
-              ...(window.ethereum ? [window.ethereum] : []),
-            ],
-            setDefaultProvider(rabbyAsDefault: boolean) {
-              if (rabbyAsDefault) {
-                window.rabbyWalletRouter.currentProvider = window.rabby;
-              } else {
-                const nonDefaultProvider =
-                  window.rabbyWalletRouter.lastInjectedProvider ??
-                  window.ethereum;
-                window.rabbyWalletRouter.currentProvider = nonDefaultProvider;
+      Object.defineProperty(window, "ethereum", {
+        get() {
+          return new Proxy(rabbyEthereumProvider, {
+            get(target, key, receiver) {
+              if (key === "request") {
+                return target.proxyRequest;
               }
-              if (
-                rabbyAsDefault ||
-                !window.rabbyWalletRouter.lastInjectedProvider
-              ) {
-                rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+              if (target.currentProvider) {
+                return Reflect.get(target.currentProvider, key, receiver);
               }
+              return Reflect.get(target, key, receiver);
             },
-            addProvider(provider) {
-              if (!window.rabbyWalletRouter.providers.includes(provider)) {
-                window.rabbyWalletRouter.providers.push(provider);
-              }
-              if (rabbyProvider !== provider) {
-                requestHasOtherProvider();
-                window.rabbyWalletRouter.lastInjectedProvider = provider;
-              }
-            },
-          },
-          configurable: false,
-          writable: false,
+          });
         },
+        configurable: true,
       });
     } catch (e) {
       // think that defineProperty failed means there is any other wallet
       requestHasOtherProvider();
       console.error(e);
-      window.ethereum = rabbyProvider;
-      window.rabby = rabbyProvider;
+      window.ethereum = rabbyEthereumProvider;
     }
   } else {
-    window.ethereum = rabbyProvider;
-    window.rabby = rabbyProvider;
+    window.ethereum = rabbyEthereumProvider;
   }
 };
 
@@ -457,8 +494,56 @@ if (isOpera) {
   initProvider();
 }
 
-requestIsDefaultWallet().then((rabbyAsDefault) => {
-  window.rabbyWalletRouter?.setDefaultProvider(rabbyAsDefault);
+function onAnnounceProvider() {
+  window.addEventListener<any>(
+    "eip6963:announceProvider",
+    (event: EIP6963AnnounceProviderEvent) => {
+      if (
+        rabbyEthereumProvider.eip6963ProviderDetails.find(
+          (p) =>
+            p.provider === event.detail.provider ||
+            event.detail.info.rdns === "io.rabby"
+        )
+      ) {
+        return;
+      }
+      rabbyEthereumProvider.eip6963ProviderDetails.push(event.detail);
+    }
+  );
+
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+}
+
+domReadyCall(onAnnounceProvider);
+
+requestCurrentProvider().then((rdns) => {
+  const currentProvider = rabbyEthereumProvider.eip6963ProviderDetails.find(
+    (item) => {
+      return item.info.rdns === rdns;
+    }
+  )?.provider;
+  rabbyEthereumProvider.currentProvider = currentProvider;
+  rabbyEthereumProvider._isReady = true;
+  rabbyEthereumProvider.on("rabby:providerChanged", ({ rdns }) => {
+    rabbyEthereumProvider.currentProvider =
+      rabbyEthereumProvider.eip6963ProviderDetails.find((item) => {
+        return item.info.rdns === rdns;
+      })?.provider;
+  });
+  rabbyEthereumProvider._cacheEventListenersBeforeReady.forEach(
+    ([event, handler]) => {
+      (window.ethereum as EthereumProvider).on(event, handler);
+    }
+  );
+  rabbyEthereumProvider._cacheRequestsBeforeReady.forEach(
+    ({ resolve, reject, data }) => {
+      (window.ethereum as EthereumProvider)
+        .request(data)
+        .then(resolve)
+        .catch(reject);
+    }
+  );
+  window.dispatchEvent(new Event("ethereum#initialized"));
 });
 
 const announceEip6963Provider = (provider: EthereumProvider) => {
@@ -484,5 +569,3 @@ window.addEventListener<any>(
 );
 
 announceEip6963Provider(rabbyProvider);
-
-window.dispatchEvent(new Event("ethereum#initialized"));
