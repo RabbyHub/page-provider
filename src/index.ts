@@ -386,6 +386,7 @@ declare global {
 const provider = new EthereumProvider({
   isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
 });
+
 const rabbyEthereumProvider = new EthereumProvider({
   isEip6963: false,
   isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
@@ -521,12 +522,18 @@ function onAnnounceProvider() {
 domReadyCall(onAnnounceProvider);
 
 requestCurrentProvider().then((rdns) => {
-  const currentProvider = rabbyEthereumProvider.eip6963ProviderDetails.find(
-    (item) => {
-      return item.info.rdns === rdns;
-    }
-  )?.provider;
+  const currentProvider = rdns
+    ? rabbyEthereumProvider.eip6963ProviderDetails.find((item) => {
+        return item.info.rdns === rdns;
+      })?.provider
+    : undefined;
   rabbyEthereumProvider.currentProvider = currentProvider;
+  if (rdns && !currentProvider) {
+    provider.requestInternalMethods({
+      method: "rabby:resetProvider",
+      params: [],
+    });
+  }
   rabbyEthereumProvider._isReady = true;
   rabbyEthereumProvider.on("rabby:providerChanged", ({ rdns }) => {
     rabbyEthereumProvider.currentProvider =
