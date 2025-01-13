@@ -392,6 +392,18 @@ const rabbyEthereumProvider = new EthereumProvider({
   isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
 });
 
+const proxyRabbyEthereumProvider = new Proxy(rabbyEthereumProvider, {
+  get(target, key, receiver) {
+    if (key === "request") {
+      return target.proxyRequest;
+    }
+    if (target.currentProvider) {
+      return Reflect.get(target.currentProvider, key, receiver);
+    }
+    return Reflect.get(target, key, receiver);
+  },
+});
+
 // patchProvider(provider);
 const rabbyProvider = new Proxy(provider, {
   deleteProperty: (target, prop) => {
@@ -464,17 +476,7 @@ const initProvider = () => {
     try {
       Object.defineProperty(window, "ethereum", {
         get() {
-          return new Proxy(rabbyEthereumProvider, {
-            get(target, key, receiver) {
-              if (key === "request") {
-                return target.proxyRequest;
-              }
-              if (target.currentProvider) {
-                return Reflect.get(target.currentProvider, key, receiver);
-              }
-              return Reflect.get(target, key, receiver);
-            },
-          });
+          return proxyRabbyEthereumProvider;
         },
         configurable: true,
       });
@@ -482,10 +484,10 @@ const initProvider = () => {
       // think that defineProperty failed means there is any other wallet
       requestHasOtherProvider();
       console.error(e);
-      window.ethereum = rabbyEthereumProvider;
+      window.ethereum = proxyRabbyEthereumProvider;
     }
   } else {
-    window.ethereum = rabbyEthereumProvider;
+    window.ethereum = proxyRabbyEthereumProvider;
   }
 };
 
