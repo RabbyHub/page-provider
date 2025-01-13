@@ -210,19 +210,19 @@ export class EthereumProvider extends EventEmitter {
       return promise;
     }
 
+    if (this._isEip6963) {
+      return this._dedupePromise.call(data.method, () => this._request(data));
+    }
+
     return this._dedupePromise.call(data.method, () =>
-      this._request(
-        this._isEip6963
-          ? data
-          : {
-              ...data,
-              $ctx: {
-                providers: this.eip6963ProviderDetails.map((item) => {
-                  return item.info;
-                }),
-              },
-            }
-      ).then(
+      this._request({
+        ...data,
+        $ctx: {
+          providers: this.eip6963ProviderDetails.map((item) => {
+            return item.info;
+          }),
+        },
+      }).then(
         (r) => {
           /**
            * relay
@@ -569,7 +569,7 @@ const announceEip6963Provider = (provider: EthereumProvider) => {
 
   if (window.__rabby__inject__?.isMetamaskMode) {
     info.uuid = metamaskModeUuid;
-    info.name = "MetaMask";
+    // info.name = "MetaMask";
     info.rdns = "io.metamask";
   }
   window.dispatchEvent(
