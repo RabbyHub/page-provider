@@ -2,18 +2,19 @@
  * this script is live in content-script / dapp's page
  */
 
-import { EventEmitter } from 'events';
-import { ethErrors } from 'eth-rpc-errors';
+import { EventEmitter } from "events";
+import { ethErrors } from "eth-rpc-errors";
+import { nanoid } from "nanoid";
 
 abstract class Message extends EventEmitter {
   // avaiable id list
   // max concurrent request limit
   private _requestIdPool = [...Array(1000).keys()];
-  protected _EVENT_PRE = 'ETH_WALLET_';
+  protected _EVENT_PRE = "ETH_WALLET_";
   protected listenCallback: any;
 
   private _waitingMap = new Map<
-    number,
+    string,
     {
       data: any;
       resolve: (arg: any) => any;
@@ -27,7 +28,8 @@ abstract class Message extends EventEmitter {
     if (!this._requestIdPool.length) {
       throw ethErrors.rpc.limitExceeded();
     }
-    const ident = this._requestIdPool.shift()!;
+    this._requestIdPool.shift()!;
+    const ident = nanoid();
 
     return new Promise((resolve, reject) => {
       this._waitingMap.set(ident, {
@@ -36,7 +38,7 @@ abstract class Message extends EventEmitter {
         reject,
       });
 
-      this.send('request', { ident, data });
+      this.send("request", { ident, data });
     });
   };
 
@@ -68,7 +70,7 @@ abstract class Message extends EventEmitter {
         e.data && (err.data = e.data);
       }
 
-      this.send('response', { ident, res, err });
+      this.send("response", { ident, res, err });
     }
   };
 

@@ -242,18 +242,6 @@ export class EthereumProvider extends EventEmitter {
     );
   };
 
-  proxyRequest = async (data) => {
-    if (data?.method == "wallet_revokePermissions") {
-      this.request(data).then(() => {
-        this.currentProvider = undefined;
-      });
-    }
-    if (this.currentProvider) {
-      return this.currentProvider?.request(data);
-    }
-    return this.request(data);
-  };
-
   _request = async (data) => {
     if (!data) {
       throw ethErrors.rpc.invalidRequest();
@@ -364,6 +352,27 @@ export class EthereumProvider extends EventEmitter {
     }
     return super.on(event, handler);
   };
+  _switchCurrentProvider = (current?: EthereumProvider) => {
+    if (this.currentProvider === current) {
+      return;
+    }
+    this.currentProvider = current;
+    if (!current) {
+      return;
+    }
+    Object.defineProperty(current, "request", {
+      value: new Proxy(current.request, {
+        apply: async (target, thisArg, argArray) => {
+          const data = argArray?.[0];
+          if (data?.method == "wallet_revokePermissions") {
+            this.currentProvider = undefined;
+            this._request(data);
+          }
+          return Reflect.apply(target, thisArg, argArray);
+        },
+      }),
+    });
+  };
 }
 
 declare global {
@@ -394,9 +403,6 @@ const rabbyEthereumProvider = new EthereumProvider({
 
 const proxyRabbyEthereumProvider = new Proxy(rabbyEthereumProvider, {
   get(target, key, receiver) {
-    if (key === "request") {
-      return target.proxyRequest;
-    }
     if (target.currentProvider) {
       return Reflect.get(target.currentProvider, key, receiver);
     }
@@ -529,7 +535,7 @@ requestCurrentProvider().then((rdns) => {
         return item.info.rdns === rdns;
       })?.provider
     : undefined;
-  rabbyEthereumProvider.currentProvider = currentProvider;
+  rabbyEthereumProvider._switchCurrentProvider(currentProvider);
   if (rdns && !currentProvider) {
     provider.requestInternalMethods({
       method: "rabby:resetProvider",
@@ -538,10 +544,11 @@ requestCurrentProvider().then((rdns) => {
   }
   rabbyEthereumProvider._isReady = true;
   rabbyEthereumProvider.on("rabby:providerChanged", ({ rdns }) => {
-    rabbyEthereumProvider.currentProvider =
+    rabbyEthereumProvider._switchCurrentProvider(
       rabbyEthereumProvider.eip6963ProviderDetails.find((item) => {
         return item.info.rdns === rdns;
-      })?.provider;
+      })?.provider
+    );
   });
   rabbyEthereumProvider._cacheEventListenersBeforeReady.forEach(
     ([event, handler]) => {
