@@ -30,6 +30,7 @@
     "eth-rpc-errors": "^4.0.3",
     "events": "^3.3.0",
     "lodash": "^4.17.21",
+    "nanoid": "5.0.9",
     "sinon-chrome": "^3.0.1",
     "webextension-polyfill": "0.7.0"
   }
