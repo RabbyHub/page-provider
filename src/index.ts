@@ -518,7 +518,7 @@ const initProvider = () => {
         get() {
           return proxyRabbyEthereumProvider;
         },
-        configurable: true,
+        configurable: false,
       });
     } catch (e) {
       // think that defineProperty failed means there is any other wallet
