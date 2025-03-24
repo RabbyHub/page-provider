@@ -388,17 +388,13 @@ declare global {
       setDefaultProvider: (rabbyAsDefault: boolean) => void;
       addProvider: (provider: EthereumProvider) => void;
     };
-    __rabby__inject__?: Record<string, any>;
   }
 }
 
-const provider = new EthereumProvider({
-  isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
-});
+const provider = new EthereumProvider();
 
 const rabbyEthereumProvider = new EthereumProvider({
   isEip6963: false,
-  isMetamaskMode: window?.__rabby__inject__?.isMetamaskMode,
 });
 
 const proxyRabbyEthereumProvider = new Proxy(rabbyEthereumProvider, {
@@ -424,18 +420,14 @@ const rabbyProvider = new Proxy(provider, {
   },
 });
 
-const requestHasOtherProvider = () => {
+const requestProviderConfig = () => {
   return provider.requestInternalMethods({
-    method: "hasOtherProvider",
+    method: "rabby:getProviderConfig",
     params: [],
-  });
-};
-
-const requestCurrentProvider = () => {
-  return provider.requestInternalMethods({
-    method: "rabby:getProvider",
-    params: [],
-  }) as Promise<string>;
+  }) as Promise<{
+    rdns: string;
+    isMetamaskMode: boolean;
+  }>;
 };
 
 const metamaskModeUuid = genUUID();
@@ -465,6 +457,14 @@ const announceEip6963Provider = (
   );
 };
 
+const announceMetamaskMode = () => {
+  rabbyEthereumProvider.isMetaMask = true;
+  delete rabbyEthereumProvider.isRabby;
+  rabbyProvider.isMetaMask = true;
+  delete rabbyProvider.isRabby;
+  announceEip6963Provider(rabbyProvider, true);
+};
+
 const initOperaProvider = () => {
   window.ethereum = rabbyProvider;
   rabbyProvider._isReady = true;
@@ -480,9 +480,6 @@ const initProvider = () => {
     doTabCheckIn(rabbyProvider.request);
   });
   // patchProvider(rabbyProvider);
-  if (window.ethereum) {
-    requestHasOtherProvider();
-  }
   if (!window.web3) {
     window.web3 = {
       currentProvider: rabbyProvider,
@@ -496,13 +493,7 @@ const initProvider = () => {
       rabbyEthereumProvider,
       lastInjectedProvider: window.ethereum,
       currentProvider: rabbyEthereumProvider,
-      announceMetamaskMode: () => {
-        rabbyEthereumProvider.isMetaMask = true;
-        delete rabbyEthereumProvider.isRabby;
-        rabbyProvider.isMetaMask = true;
-        delete rabbyProvider.isRabby;
-        announceEip6963Provider(rabbyProvider, true);
-      },
+      announceMetamaskMode,
     },
     configurable: false,
     writable: false,
@@ -522,7 +513,6 @@ const initProvider = () => {
       });
     } catch (e) {
       // think that defineProperty failed means there is any other wallet
-      requestHasOtherProvider();
       console.error(e);
       window.ethereum = proxyRabbyEthereumProvider;
     }
@@ -563,7 +553,7 @@ function onAnnounceProvider() {
 
 domReadyCall(onAnnounceProvider);
 
-requestCurrentProvider().then((rdns) => {
+requestProviderConfig().then(({ rdns, isMetamaskMode }) => {
   const currentProvider = rdns
     ? rabbyEthereumProvider.eip6963ProviderDetails.find((item) => {
         return item.info.rdns === rdns;
@@ -598,6 +588,11 @@ requestCurrentProvider().then((rdns) => {
     }
   );
   rabbyProvider.on("rabby:chainChanged", switchChainNotice);
+
+  if (isMetamaskMode) {
+    announceMetamaskMode();
+  }
+
   window.dispatchEvent(new Event("ethereum#initialized"));
 });
 
@@ -605,11 +600,11 @@ window.addEventListener<any>(
   "eip6963:requestProvider",
   (event: EIP6963RequestProviderEvent) => {
     announceEip6963Provider(rabbyProvider);
+    const isMetamaskMode = !rabbyProvider.isRabby;
+    if (isMetamaskMode) {
+      announceEip6963Provider(rabbyProvider, true);
+    }
   }
 );
 
 announceEip6963Provider(rabbyProvider);
-
-if (window?.__rabby__inject__?.isMetamaskMode) {
-  announceEip6963Provider(rabbyProvider, true);
-}
