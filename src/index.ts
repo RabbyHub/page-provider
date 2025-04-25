@@ -55,11 +55,36 @@ interface EIP6963RequestProviderEvent extends Event {
   type: "eip6963:requestProvider";
 }
 
+function getAppleTouchIcon(): string | null {
+  const icons = Array.from(
+    document.querySelectorAll<HTMLLinkElement>(
+      'link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]'
+    )
+  );
+
+  icons.sort((a, b) => {
+    const sizeA = a.sizes ? parseInt(a.sizes.value.split("x")[0]) : 0;
+    const sizeB = b.sizes ? parseInt(b.sizes.value.split("x")[0]) : 0;
+    return sizeB - sizeA;
+  });
+
+  return icons.length > 0 ? icons[0].href : null;
+}
+
 const doTabCheckIn = (request: (data: any) => void) => {
   const origin = location.origin;
-  const icon =
+  let icon =
+    getAppleTouchIcon() ||
     ($('head > link[rel~="icon"]') as HTMLLinkElement)?.href ||
     ($('head > meta[itemprop="image"]') as HTMLMetaElement)?.content;
+
+  if (icon && !/^https?:\/\//.test(icon)) {
+    try {
+      icon = new URL(icon, origin).href;
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   const name =
     document.title ||
