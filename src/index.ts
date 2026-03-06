@@ -539,10 +539,18 @@ const initProvider = () => {
     } catch (e) {
       // think that defineProperty failed means there is any other wallet
       console.error(e);
-      window.ethereum = proxyRabbyEthereumProvider;
+      try {
+        window.ethereum = proxyRabbyEthereumProvider;
+      } catch (e) {
+        console.error(e);
+      }
     }
   } else {
-    window.ethereum = proxyRabbyEthereumProvider;
+    try {
+      window.ethereum = proxyRabbyEthereumProvider;
+    } catch (e) {
+      console.error(e);
+    }
   }
 };
 
